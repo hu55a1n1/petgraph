@@ -473,7 +473,7 @@ fn dijk() {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
 
-    let (scores, _)  = dijkstra(&g, a, None, |e| *e.weight());
+    let (scores, _) = dijkstra(&g, a, None, |e| *e.weight());
     let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();
     scores.sort();
     assert_eq!(
