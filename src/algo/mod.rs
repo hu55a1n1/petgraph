@@ -35,7 +35,7 @@ use crate::visit::Walker;
 use crate::visit::{Data, IntoNodeReferences, NodeRef};
 
 pub use astar::astar;
-pub use bellman_ford::bellman_ford;
+pub use bellman_ford::{bellman_ford, find_negative_cycle};
 pub use dijkstra::dijkstra;
 pub use edmonds_karp::edmonds_karp;
 pub use feedback_arc_set::greedy_feedback_arc_set;
