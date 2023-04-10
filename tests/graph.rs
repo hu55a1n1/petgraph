@@ -473,7 +473,7 @@ fn dijk() {
         println!("Visit {:?} = {:?}", no, g.node_weight(no));
     }
 
-    let scores = dijkstra(&g, a, None, |e| *e.weight());
+    let (scores, _)  = dijkstra(&g, a, None, |e| *e.weight());
     let mut scores: Vec<_> = scores.into_iter().map(|(n, s)| (g[n], s)).collect();
     scores.sort();
     assert_eq!(
@@ -488,7 +488,7 @@ fn dijk() {
         ]
     );
 
-    let scores = dijkstra(&g, a, Some(c), |e| *e.weight());
+    let (scores, _) = dijkstra(&g, a, Some(c), |e| *e.weight());
     assert_eq!(scores[&c], 9);
 }
 
@@ -515,7 +515,7 @@ fn test_astar_null_heuristic() {
     assert_eq!(path, Some((23, vec![a, d, e])));
 
     // check against dijkstra
-    let dijkstra_run = dijkstra(&g, a, Some(e), |e| *e.weight());
+    let (dijkstra_run, _) = dijkstra(&g, a, Some(e), |e| *e.weight());
     assert_eq!(dijkstra_run[&e], 23);
 
     let path = astar(&g, e, |finish| finish == b, |e| *e.weight(), |_| 0);
@@ -560,7 +560,7 @@ fn test_astar_manhattan_heuristic() {
     assert_eq!(path, Some((6., vec![a, d, e, f])));
 
     // check against dijkstra
-    let dijkstra_run = dijkstra(&g, a, None, |e| *e.weight());
+    let (dijkstra_run, _) = dijkstra(&g, a, None, |e| *e.weight());
 
     for end in g.node_indices() {
         let astar_path = astar(
@@ -1875,6 +1875,7 @@ fn neighbor_order() {
 fn dot() {
     // test alternate formatting
     #[derive(Debug)]
+    #[allow(dead_code)]
     struct Record {
         a: i32,
         b: &'static str,
