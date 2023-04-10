@@ -1,14 +1,16 @@
 //! Bellman-Ford algorithms.
 
 use crate::prelude::*;
+use std::collections::HashMap;
+use std::hash::Hash;
 
 use crate::visit::{IntoEdges, IntoNodeIdentifiers, NodeCount, NodeIndexable};
 
-use super::{FloatMeasure, NegativeCycle};
+use super::{Measure, NegativeCycle};
 
 #[derive(Debug, Clone)]
 pub struct Paths<NodeId, EdgeWeight> {
-    pub distances: Vec<EdgeWeight>,
+    pub distances: HashMap<NodeId, EdgeWeight>,
     pub predecessors: Vec<Option<NodeId>>,
 }
 
@@ -85,10 +87,11 @@ pub fn bellman_ford<G, F, K>(
 ) -> Result<Paths<G::NodeId, K>, NegativeCycle>
 where
     G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
+    G::NodeId: Eq + Hash,
     F: Fn(G::EdgeRef) -> K,
-    K: FloatMeasure,
+    K: Measure + Copy,
 {
-    let ix = |i| g.to_index(i);
+    // let ix = |i| g.to_index(i);
 
     // Step 1 and Step 2: initialize and relax
     let (distances, predecessors) = bellman_ford_initialize_relax(g, source, &edge_cost);
@@ -98,8 +101,12 @@ where
         for edge in g.edges(i) {
             let j = edge.target();
             let w = edge_cost(edge);
-            if distances[ix(i)] + w < distances[ix(j)] {
-                return Err(NegativeCycle(()));
+
+            if let Some(d_i) = distances.get(&i) {
+                let d_j = distances.get(&j);
+                if d_j.is_none() || *d_i + w < *d_j.unwrap() {
+                    return Err(NegativeCycle(()));
+                }
             }
         }
     }
@@ -116,17 +123,17 @@ fn bellman_ford_initialize_relax<G, F, K>(
     g: G,
     source: G::NodeId,
     edge_cost: F,
-) -> (Vec<K>, Vec<Option<G::NodeId>>)
+) -> (HashMap<G::NodeId, K>, Vec<Option<G::NodeId>>)
 where
     G: NodeCount + IntoNodeIdentifiers + IntoEdges + NodeIndexable,
+    G::NodeId: Eq + Hash,
     F: Fn(G::EdgeRef) -> K,
-    K: FloatMeasure,
+    K: Measure + Copy,
 {
     // Step 1: initialize graph
     let mut predecessor = vec![None; g.node_bound()];
-    let mut distance = vec![<_>::infinite(); g.node_bound()];
-    let ix = |i| g.to_index(i);
-    distance[ix(source)] = <_>::zero();
+    let mut distance = HashMap::new();
+    distance.insert(source, K::default());
 
     // Step 2: relax edges repeatedly
     for _ in 1..g.node_count() {
@@ -135,10 +142,14 @@ where
             for edge in g.edges(i) {
                 let j = edge.target();
                 let w = edge_cost(edge);
-                if distance[ix(i)] + w < distance[ix(j)] {
-                    distance[ix(j)] = distance[ix(i)] + w;
-                    predecessor[ix(j)] = Some(i);
-                    did_update = true;
+
+                if let Some(d_i) = distance.get(&i) {
+                    let d_j = distance.get(&j);
+                    if d_j.is_none() || *d_i + w < *d_j.unwrap() {
+                        distance.insert(j, *d_i + w);
+                        predecessor[g.to_index(j)] = Some(i);
+                        did_update = true;
+                    }
                 }
             }
         }
